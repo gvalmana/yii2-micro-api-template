@@ -1,12 +1,15 @@
 <?php
 $db = require __DIR__ . '/db.php';
+$params =  array_merge(
+    require(__DIR__ . '/params.php')
+);
 $config = [
     'id' => 'yii2-micro-api',
     // the basePath of the application will be the `micro-app` directory
     'basePath' => dirname(__DIR__),
     // set an alias to enable autoloading of classes from the 'micro' namespace
     'name' => 'Yii2MicroApi',
-    'language' => 'id',
+    'language' => 'es',
     'sourceLanguage' => 'en-US',
     'timeZone' => 'Asia/Jakarta',
     'aliases' => [
@@ -59,7 +62,7 @@ $config = [
         // ],
 
     ],
-
+    'params' => $params,
 ];
 if (YII_ENV_DEV) {
     // configuration adjustments for 'dev' environment

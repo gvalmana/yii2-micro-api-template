@@ -2,70 +2,98 @@
 
 namespace app\models;
 
+use app\models\User;
 use yii\base\Model;
+use Yii;
 
 /**
  * Signup form
  */
 class SignupForm extends Model
 {
+
     public $username;
     public $email;
     public $password;
-    public $name;
+    public $password_confirm;
+    public $nombre_usuario;
+    public $apellido_usuario;
 
+    public function __construct($config = [])
+    {
+        $this->attributes = parent::attributes();
+        parent::__construct($config);
+    }
 
     /**
-     * @inheritdoc
+     * {@inheritdoc}
      */
     public function rules()
     {
         return [
-            [['username', 'email', 'password', 'name'], 'filter', 'filter' => function ($value) {
-                return \yii\helpers\HtmlPurifier::process($value);
-            }],
-
+            ['username', 'trim'],
             ['username', 'required'],
-            ['username', 'unique', 'targetClass' => '\app\models\User', 'message' => 'This username has already been taken.'],
-            ['username', 'string', 'min' => 2, 'max' => 20],
+            ['username', 'unique', 'targetClass' => '\app\models\User', 'message' => 'El nombre de usuario ya existe.'],
+            ['username', 'string', 'min' => 2, 'max' => 255],
 
+            ['email', 'trim'],
             ['email', 'required'],
             ['email', 'email'],
-            ['email', 'string', 'max' => 50],
-            ['email', 'unique', 'targetClass' => '\app\models\User', 'message' => 'This email address has already been taken.'],
+            ['email', 'string', 'max' => 255],
+            ['email', 'unique', 'targetClass' => '\app\models\User', 'message' => 'Existe una cuenta con ese correo electrónico asociado.'],
 
             ['password', 'required'],
-            ['password', 'string', 'min' => 6],
+            ['password', 'string', 'min' => Yii::$app->params['user.passwordMinLength']],
+            ['password', 'compare',  'compareAttribute'=>'password_confirm', 'operator'=> '===', 'message'=>'Las contraseñas no coinciden.'],
 
-            ['name', 'required'],
-            ['name', 'string', 'min' => 3, 'max' => 50],
+            ['password_confirm','required']
         ];
     }
 
     /**
      * Signs user up.
      *
-     * @return User|null the saved model or null if saving fails
+     * @return bool whether the creating new account was successful and email was sent
      */
     public function signup()
     {
         if (!$this->validate()) {
-            return null;
+            return array('errors'=>$this->errors);
         }
-
+        
         $user = new User();
-        $user->username = \str_replace(' ', '', $this->username);
-        $user->email = \str_replace(' ', '', $this->email);
+        $user->username = $this->username;
+        $user->email = $this->email;
         $user->setPassword($this->password);
         $user->generateAuthKey();
-
-        if ($user->save(false)) {
-            $profile = new \app\models\Profile();
-            $profile->user_id = $user->id;
-            $profile->name = $this->name;
-            $profile->save(false);
-            return $user;
+        $user->generateEmailVerificationToken();
+        if ($user->save()) {
+            //$this->sendEmail($user);
+            return ['data'=> $user];
+        }else{
+            return array('errors'=>$user->errors);
         }
-        return null;
+    }    
+
+    /**
+     * Sends confirmation email to user
+     * @param User_rbac $user user model to with email should be send
+     * @return bool whether the email was sent
+     */
+    public function sendEmail($user)
+    {
+        $mailer = Yii::$app->mailer;
+        $mailer->htmlLayout = '@common/mail/layouts/html';
+        $mailer->textLayout = '@common/mail/layouts/text';
+        return $mailer
+            ->compose(
+                ['html' => '@common/mail/emailVerify-html', 'text' => '@common/mail/emailVerify-text'],
+                ['user' => $user]
+            )
+            ->setFrom([Yii::$app->params['supportEmail'] => Yii::$app->name . ' robot'])
+            ->setTo($user->email)
+            ->setSubject('Account registration at ' . Yii::$app->name)
+            ->send();
     }
 }
+

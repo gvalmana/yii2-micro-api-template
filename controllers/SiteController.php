@@ -4,6 +4,7 @@ namespace app\controllers;
 
 use app\models\SignupForm;
 use app\models\User;
+use app\models\LoginForm;
 use yii;
 use yii\filters\Cors;
 use yii\rest\ActiveController;
@@ -43,7 +44,7 @@ class SiteController extends ActiveController
             'class' => yii\filters\auth\HttpBearerAuth::className(),
             'except' => [
                 'login',
-                'register',
+                'signup',
                 'index',
                 'reset-password',
                 'send-email-reset-password',
@@ -68,61 +69,39 @@ class SiteController extends ActiveController
      *
      * @return mixed
      */
-
-    public function actionRegister()
-    {
-        $model = new SignupForm();
-        $params = Yii::$app->request->post();
-        $model->name = $params['name'] ?? "";
-        $model->email = $params['email'] ?? "";
-        $model->username = $params['email'] ?? "";
-        $model->password = $params['password'] ?? "";
-        if (!$model->signup()) {
-            Yii::$app->response->statusCode = 404;
-            return [
-                'hasErrors' => $model->hasErrors(),
-                'errors' => $model->getErrors(),
-            ];
-        }
-        Yii::$app->response->statusCode = 201;
-        return [
-            'status' => 'success',
-            'message' => 'REGISTER_SUCCESS',
-        ];
-    }
-
     public function actionLogin()
     {
-        $params = Yii::$app->request->post();
-        $email = $params['email'] ?? "";
-        $password = $params['password'] ?? "";
-        if (empty($email) || empty($password)) {
-            Yii::$app->response->statusCode = 404;
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $model = new LoginForm();
+        $model->load(\Yii::$app->request->post(), '');
+        
+        if ($model->login()) {
             return [
-                'status' => 'error',
-                'data' => 'DATA_ERROR',
+                "message"=>"ok"
+            ];
+        } else {
+            Yii::$app->getResponse()->setStatusCode(422);
+            return [
+                "message"=>"mal"
             ];
         }
-        $user = User::findByEmail($email);
-        if (!$user) {
-            Yii::$app->response->statusCode = 404;
-            return [
-                'status' => 'error',
-                'email' => 'EMAIL_ERROR',
-            ];
+
+    }
+
+    /**
+     * Signs user up.
+     *
+     * @return mixed
+     */
+    public function actionSignup()
+    {
+        \Yii::$app->response->format = \yii\web\Response::FORMAT_JSON;
+        $model = new SignupForm();
+        if ($model->load(\Yii::$app->request->post(), '')) {
+            $user = $model->signup();
+            return $user;
         }
-        if (!$user->validatePassword($password)) {
-            Yii::$app->response->statusCode = 404;
-            return [
-                'status' => 'error',
-                'password' => 'PASSWORD_ERROR',
-            ];
-        }
-        return [
-            'status' => 'success',
-            'message' => 'LOGIN_SUCCESS!',
-            'data' => $user,
-        ];
+        return array('error' => "Data Error");
     }
 
     public function actionResetPassword()
