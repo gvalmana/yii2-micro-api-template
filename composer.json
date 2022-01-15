@@ -1,0 +1,28 @@
+{
+  "name": "wibiesana/yii2-micro-api",
+  "description": "Yii2 Micro Project Template for REST API",
+  "keywords": [
+    "yii2",
+    "framework",
+    "rest-api",
+    "project template"
+  ],
+  "type": "project",
+  "license": "BSD-3-Clause",
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=7.3",
+    "yiisoft/yii2": "~2.0.38",
+    "yiisoft/yii2-swiftmailer": "*"
+  },
+  "require-dev": {
+    "yiisoft/yii2-debug": "^2.1",
+    "yiisoft/yii2-gii": "~2.1.0"
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://asset-packagist.org"
+    }
+  ]
+}
